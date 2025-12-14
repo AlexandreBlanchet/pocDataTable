@@ -16,6 +16,7 @@ const tokensApi = new platformClient.TokensApi();
 const routingApi = new platformClient.RoutingApi();
 const presenceApi = new platformClient.PresenceApi();
 const locationApi = new platformClient.LocationsApi();
+const architectApi = new platformClient.ArchitectApi();
 
 
 const getAllPages = async (request: Function) => {
@@ -25,7 +26,7 @@ const getAllPages = async (request: Function) => {
     do {
         result = await request({ 
             'pageNumber': pageNumber++, // Number | Page number
-            'pageSize': 25, expand: ['locations', 'skills']})
+            'pageSize': 25, expand: ['locations', 'skills', 'dateLastLogin', 'presence']})
             result.entities?.length > 0 && 
             listElements.push(...result.entities)
     } while(result.pageNumber < result.pageCount)
@@ -53,6 +54,33 @@ export function getUserByEmail(email: string) {
         }]
     };
     return searchApi.postUsersSearch(body);
+}
+
+export async function getAllPresences() {
+    return await presenceApi.getSystempresences()
+}
+
+export async function getUser(userId: string) {
+    return await usersApi.getUser(userId)
+}
+
+export async function getDataTable(datatableId: string) {
+    return await architectApi.getFlowsDatatableRows(datatableId,  { 
+  "pageNumber": 1, // Number | Page number
+  "pageSize": 100, // Number | Page size
+  "showbrief": false, // Boolean | If true returns just the key value of the row
+  "sortOrder": "ascending" // String | Sort order
+})
+}
+
+export async function getDataTableRow(datatableId: string, rowId: string) {
+    return await architectApi.getFlowsDatatableRow(datatableId, rowId,  { 
+  "showbrief": false, // Boolean | If true returns just the key value of the row
+})
+}
+
+export async function getAllFlows() {
+    return await getAllPages((e: any) => architectApi.getFlows(e));
 }
 
 export async function getAllLocations() {
