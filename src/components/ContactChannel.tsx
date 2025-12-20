@@ -17,7 +17,7 @@ import LocalPhoneIcon from '@mui/icons-material/LocalPhone';
 import EmailIcon from '@mui/icons-material/Email';
 import AudiotrackIcon from '@mui/icons-material/Audiotrack';
 import React from 'react';
-import { getAllFlows, getDataTableRow } from '../utils/genesysCloudUtils';
+import { getAllFlows, getDataTable, getDataTableInfos, getDataTableRow } from '../utils/genesysCloudUtils';
 import { useParams } from 'react-router';
 import { Models } from 'purecloud-platform-client-v2';
 
@@ -28,10 +28,14 @@ export default function UserProfile() {
 
     React.useEffect(() => {
         getDataTableRow("d1571698-b5ca-4b7d-a1ac-d3a849d7968f", id || '').then(user => setContactChannel(user))
+        getDataTableInfos("76dc6855-fc19-4de5-9d14-fbee2bf45843").then(dataTable => {
+          console.log("datatable")
+          console.log(dataTable)
+        })
         getAllFlows().then(flows => setFlows(flows))
     }, [id])
 
-        console.log(contactChannel)
+     //   console.log(contactChannel)
 
   return (
     <Box sx={{ flex: 1, width: '100%' }}>

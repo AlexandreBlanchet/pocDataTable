@@ -27,6 +27,8 @@ import { Models } from 'purecloud-platform-client-v2';
 
 import ColorSchemeToggle from './ColorSchemeToggle';
 import { closeSidebar } from '../utils/Utils';
+import { ObjectType } from '../utils/types';
+import { useLocation, useNavigate } from 'react-router';
 
 function Toggler({
   defaultExpanded = false,
@@ -62,7 +64,10 @@ function Toggler({
   );
 }
 
-export default function Sidebar({ authenticatedUser } : {authenticatedUser : Models.User}) {
+export default function Sidebar({ authenticatedUser, objectsTypes } : {authenticatedUser : Models.User, objectsTypes: ObjectType[]}) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   return (
     <Sheet
       className="Sidebar"
@@ -151,7 +156,6 @@ export default function Sidebar({ authenticatedUser } : {authenticatedUser : Mod
               </ListItemContent>
             </ListItemButton>
           </ListItem>
-
           <ListItem>
             <ListItemButton>
               <DashboardRoundedIcon />
@@ -160,19 +164,18 @@ export default function Sidebar({ authenticatedUser } : {authenticatedUser : Mod
               </ListItemContent>
             </ListItemButton>
           </ListItem>
-
-          <ListItem>
-            <ListItemButton
-              role="menuitem"
-              component="a"
-              href="/joy-ui/getting-started/templates/order-dashboard/"
-            >
-              <ShoppingCartRoundedIcon />
+          {
+            objectsTypes.map(objectType =>  
+            <ListItem>
+            <ListItemButton selected={location.pathname.startsWith(objectType.path)} onClick={() => navigate(objectType.path)}>
+              <DashboardRoundedIcon />
               <ListItemContent>
-                <Typography level="title-sm">Orders</Typography>
+                <Typography level="title-sm">{objectType.name}</Typography>
               </ListItemContent>
             </ListItemButton>
-          </ListItem>
+          </ListItem>)
+          }
+         
           <ListItem nested>
             <Toggler
               renderToggle={({ open, setOpen }) => (
@@ -220,35 +223,13 @@ export default function Sidebar({ authenticatedUser } : {authenticatedUser : Mod
               </Chip>
             </ListItemButton>
           </ListItem>
-          <ListItem nested>
-            <Toggler
-              defaultExpanded
-              renderToggle={({ open, setOpen }) => (
-                <ListItemButton onClick={() => setOpen(!open)}>
-                  <GroupRoundedIcon />
-                  <ListItemContent>
-                    <Typography level="title-sm">Users</Typography>
-                  </ListItemContent>
-                  <KeyboardArrowDownIcon
-                    sx={[
-                      open ? { transform: 'rotate(180deg)' } : { transform: 'none' },
-                    ]}
-                  />
-                </ListItemButton>
-              )}
-            >
-              <List sx={{ gap: 0.5 }}>
-                <ListItem sx={{ mt: 0.5 }}>
-                  <ListItemButton selected>My profile</ListItemButton>
-                </ListItem>
-                <ListItem>
-                  <ListItemButton>Create a new user</ListItemButton>
-                </ListItem>
-                <ListItem>
-                  <ListItemButton>Roles & permission</ListItemButton>
-                </ListItem>
-              </List>
-            </Toggler>
+           <ListItem>
+            <ListItemButton>
+               <GroupRoundedIcon />
+              <ListItemContent>
+                <Typography level="title-sm">Users</Typography>
+              </ListItemContent>
+            </ListItemButton>
           </ListItem>
         </List>
         <List

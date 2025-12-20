@@ -73,6 +73,10 @@ export async function getDataTable(datatableId: string) {
 })
 }
 
+export async function getDataTableInfos(datatableId: string) {
+    return await architectApi.getFlowsDatatable(datatableId, {"expand": "schema"})
+}
+
 export async function getDataTableRow(datatableId: string, rowId: string) {
     return await architectApi.getFlowsDatatableRow(datatableId, rowId,  { 
   "showbrief": false, // Boolean | If true returns just the key value of the row

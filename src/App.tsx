@@ -1,11 +1,10 @@
 
 import { useEffect, useState } from 'react';
-import { authenticate, getUserMe } from './utils/genesysCloudUtils';
+import { authenticate, getDataTable, getDataTableInfos, getUserMe } from './utils/genesysCloudUtils';
 import { Models } from 'purecloud-platform-client-v2';
 import { Box, Breadcrumbs, Button, CssBaseline, CssVarsProvider, Link, Typography } from '@mui/joy';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import UserTable from './components/UserTable';
@@ -13,10 +12,14 @@ import UserProfile from './components/UserProfile';
 import { Route, Routes } from 'react-router';
 import ContactChannelsTable from './components/ContactChannelsTable';
 import ContactChannel from './components/ContactChannel';
+import ObjectTypeTable from './components/ObjectTypeTable';
+import ObjectTypeElement from './components/ObjectTypeElement';
+import { ObjectType } from './utils/types';
 
 function App() {
   const [initialized, setInitialized] = useState<boolean>(false);
   const [authenticatedUser, setAuthenticadUser] = useState<Models.User>({version: 1})
+  const [objectsTypes, setObjectsTypes] = useState<ObjectType[]>([])
 
   useEffect(() => {
     getPlatformClientData();
@@ -29,6 +32,12 @@ function App() {
       })
       .then((userDetailsResponse: any) => {
         setAuthenticadUser(userDetailsResponse)
+        getDataTable("61981ec5-b713-4e71-b79f-9504de684e00").then(objectTypes => {
+          Promise.all(objectTypes.entities?.map((objectType: any) => {
+            return getDataTableInfos(objectType.key).then(elem => {
+              console.log(elem)
+              return {id: elem.id, division: elem.division, name: elem.name, path: objectType.path, description: elem.description, properties: elem.schema?.properties }})}) || []).then((elems: any) => setObjectsTypes(elems))
+        })
         setInitialized(true)
       })
       .catch((err: any) => {
@@ -36,14 +45,15 @@ function App() {
       });
   }
 
-  
+  console.log(objectsTypes)
+
   return (
     <>{
       initialized && 
        <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
       <Box sx={{ display: 'flex', minHeight: '100dvh' }}>
-        <Sidebar authenticatedUser={authenticatedUser}/>
+        <Sidebar authenticatedUser={authenticatedUser} objectsTypes={objectsTypes} />
         <Header />
          <Box
           component="main"
@@ -64,52 +74,12 @@ function App() {
             gap: 1,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Breadcrumbs
-              size="sm"
-              aria-label="breadcrumbs"
-              separator={<ChevronRightRoundedIcon />}
-              sx={{ pl: 0 }}
-            >
-              <Link
-                underline="none"
-                color="neutral"
-                href="#some-link"
-                aria-label="Home"
-              >
-                <HomeRoundedIcon />
-              </Link>
-              <Link
-                underline="hover"
-                color="neutral"
-                href="#some-link"
-                sx={{ fontSize: 12, fontWeight: 500 }}
-              >
-                General
-              </Link>
-              <Typography color="primary" sx={{ fontWeight: 500, fontSize: 12 }}>
-                Contact channel
-              </Typography>
-            </Breadcrumbs>
-          </Box>
-          <Box
-            sx={{
-              display: 'flex',
-              mb: 1,
-              gap: 1,
-              flexDirection: { xs: 'column', sm: 'row' },
-              alignItems: { xs: 'start', sm: 'center' },
-              flexWrap: 'wrap',
-              justifyContent: 'space-between',
-            }}
-          >
-            <Typography level="h2" component="h1">
-              Contact channel
-            </Typography>
-          </Box>
+
            <Routes>
             <Route path="/users" element={<UserTable />} />
             <Route path="/users/:id" element={<UserProfile />} />
+            {objectsTypes.map(objectType => <Route path={objectType.path} element={<ObjectTypeTable objectType={objectType} />} />)}
+            {objectsTypes.map(objectType => <Route path={objectType.path + "/:id"} element={<ObjectTypeElement objectType={objectType} />} />)}
             <Route path="/contactChannels" element={<ContactChannelsTable />} />
             <Route path="/contactChannels/:id" element={<ContactChannel />} />
             <Route path="/about" element={<UserProfile />} />
