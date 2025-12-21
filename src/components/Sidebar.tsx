@@ -165,8 +165,9 @@ export default function Sidebar({ authenticatedUser, objectsTypes } : {authentic
             </ListItemButton>
           </ListItem>
           {
-            objectsTypes.map(objectType =>  
-            <ListItem>
+            objectsTypes.map(objectType => 
+              objectType.rights.includes("R") && 
+            <ListItem key={objectType.id}>
             <ListItemButton selected={location.pathname.startsWith(objectType.path)} onClick={() => navigate(objectType.path)}>
               <DashboardRoundedIcon />
               <ListItemContent>
@@ -224,7 +225,7 @@ export default function Sidebar({ authenticatedUser, objectsTypes } : {authentic
             </ListItemButton>
           </ListItem>
            <ListItem>
-            <ListItemButton>
+            <ListItemButton selected={location.pathname.startsWith('/users')} onClick={() => navigate('/users')}>
                <GroupRoundedIcon />
               <ListItemContent>
                 <Typography level="title-sm">Users</Typography>

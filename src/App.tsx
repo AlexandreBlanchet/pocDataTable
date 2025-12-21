@@ -1,10 +1,8 @@
 
 import { useEffect, useState } from 'react';
-import { authenticate, getDataTable, getDataTableInfos, getUserMe } from './utils/genesysCloudUtils';
+import { authenticate, getDataTable, getDataTableInfos, getDataTableRow, getUserMe } from './utils/genesysCloudUtils';
 import { Models } from 'purecloud-platform-client-v2';
 import { Box, Breadcrumbs, Button, CssBaseline, CssVarsProvider, Link, Typography } from '@mui/joy';
-import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
-import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import UserTable from './components/UserTable';
@@ -30,13 +28,20 @@ function App() {
       .then(() => {
         return getUserMe();
       })
-      .then((userDetailsResponse: any) => {
+      .then(async (userDetailsResponse: Models.User) => {
         setAuthenticadUser(userDetailsResponse)
+        console.log(userDetailsResponse.id)
+        const rights = await getDataTableRow("d0129b44-f0aa-48ce-a30f-a798954e3de3", userDetailsResponse.id || "").then( rights => {
+          return JSON.parse(rights.rights.toString())
+        }).catch(error => {
+          return {}
+        })
         getDataTable("61981ec5-b713-4e71-b79f-9504de684e00").then(objectTypes => {
           Promise.all(objectTypes.entities?.map((objectType: any) => {
             return getDataTableInfos(objectType.key).then(elem => {
-              console.log(elem)
-              return {id: elem.id, division: elem.division, name: elem.name, path: objectType.path, description: elem.description, properties: elem.schema?.properties }})}) || []).then((elems: any) => setObjectsTypes(elems))
+              let properties: any = elem.schema?.properties || {}
+              Object.keys(properties).map(property => properties[property].rights = rights[elem.id || ""] ? rights[elem.id || ""][properties[property].title] : "")
+              return {id: elem.id, division: elem.division, name: elem.name, path: objectType.path, description: elem.description, rights: rights[elem.id || ""]?.all || "", properties }})}) || []).then((elems: any) => setObjectsTypes(elems))
         })
         setInitialized(true)
       })
@@ -77,13 +82,13 @@ function App() {
 
            <Routes>
             <Route path="/users" element={<UserTable />} />
-            <Route path="/users/:id" element={<UserProfile />} />
-            {objectsTypes.map(objectType => <Route path={objectType.path} element={<ObjectTypeTable objectType={objectType} />} />)}
-            {objectsTypes.map(objectType => <Route path={objectType.path + "/:id"} element={<ObjectTypeElement objectType={objectType} />} />)}
+            <Route path="/users/:id" element={<UserProfile objectsTypes={objectsTypes}/>} />
+            {objectsTypes.map(objectType => objectType.rights.includes("R") && <Route key={objectType.id} path={objectType.path} element={<ObjectTypeTable objectType={objectType} />} />)}
+            {objectsTypes.map(objectType => objectType.rights.includes("R") && <Route key={objectType.id} path={objectType.path + "/:id"} element={<ObjectTypeElement objectType={objectType} />} />)}
             <Route path="/contactChannels" element={<ContactChannelsTable />} />
             <Route path="/contactChannels/:id" element={<ContactChannel />} />
-            <Route path="/about" element={<UserProfile />} />
-            <Route path="*" element={<UserProfile />} />
+            <Route path="/about" element={<UserTable />} />
+            <Route path="*" element={<UserTable />} />
           </Routes>
         </Box>
       </Box>

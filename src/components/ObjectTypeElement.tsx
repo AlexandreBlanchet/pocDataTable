@@ -68,11 +68,12 @@ export default function ObjectTypeElement({ objectType } : { objectType: ObjectT
               <Grid container spacing={2} sx={{ flexGrow: 1 }}>
               
                  {Object.keys(objectType.properties).filter(property => property != "key").map(proprety =>
+                 objectType.properties[proprety].rights?.includes("R") && 
                  <Grid>
                   <FormControl sx={{ width: 200 }}>
                   <FormLabel>{objectType.properties[proprety].title}</FormLabel>{
                    objectType.properties[proprety].type == 'string' &&
-                      <Input size="sm" value={element && element[proprety]} />
+                      <Input disabled={!objectType.properties[proprety].rights?.includes("U")} size="sm" value={element && element[proprety]} />
                   }
                 </FormControl>
                 </Grid>
