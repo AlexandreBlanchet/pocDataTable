@@ -23,7 +23,7 @@ import { ObjectType } from '../utils/types';
 import {  List, ListDivider, ListItem,  Switch } from '@mui/joy';
 
 
-const updateRights = (rights: string, rightToUpdate: string) => {
+const updateRights = (rights: string | undefined, rightToUpdate: string) => {
   rights = rights || ""
   return rights.includes(rightToUpdate) ? rights.replace(rightToUpdate, "") : (rights + rightToUpdate) 
 
@@ -52,9 +52,9 @@ export default function UserProfile({ objectsTypes } : { objectsTypes: ObjectTyp
           setLocalObjectsTypes(objectsTypes.map(objType => {
             let properties = objType.properties
             Object.keys(properties).map(property => properties[property].rights = rights[objType.id || ""] ? rights[objType.id || ""][properties[property].title] : undefined)
-            return {...objType, rights: rights[objType.id || ""] ? rights[objType.id || ""].all : "" , properties }
+            return {...objType,  rights: rights[objType.id || ""] ? rights[objType.id || ""].all : "" , properties }
           }))
-        }).catch(error => {
+        }).catch(_ => {
           setLocalObjectsTypes(objectsTypes)
         })
     }, [id])
@@ -262,7 +262,7 @@ export default function UserProfile({ objectsTypes } : { objectsTypes: ObjectTyp
                     gap={1}
                     direction={"row"}
                     >
-                  {['Read', 'Update'].map((value, index) => {
+                  {['Read', 'Update'].map((value) => {
                     
                     const rights = objectType.properties[property].rights != undefined ? objectType.properties[property].rights : objectType.rights.replace("C", "").replace("D", "")
                     return (

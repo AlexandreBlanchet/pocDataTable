@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { authenticate, getDataTable, getDataTableInfos, getDataTableRow, getUserMe } from './utils/genesysCloudUtils';
 import { Models } from 'purecloud-platform-client-v2';
-import { Box, Breadcrumbs, Button, CssBaseline, CssVarsProvider, Link, Typography } from '@mui/joy';
+import { Box, CssBaseline, CssVarsProvider } from '@mui/joy';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import UserTable from './components/UserTable';
@@ -32,8 +32,6 @@ function App() {
         setAuthenticadUser(userDetailsResponse)
         const rights = await getDataTableRow("d0129b44-f0aa-48ce-a30f-a798954e3de3", userDetailsResponse.id || "").then( rights => {
           return JSON.parse(rights.rights.toString())
-        }).catch(error => {
-          return {}
         })
         getDataTable("61981ec5-b713-4e71-b79f-9504de684e00").then(objectTypes => {
           Promise.all(objectTypes.entities?.map((objectType: any) => {

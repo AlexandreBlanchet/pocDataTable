@@ -2,6 +2,7 @@
 export const clientConfig = {
     clientId: 'd7fcb9e0-08c6-458e-9559-481ba326c996',
     //redirectUri: 'https://ovalo-cx.github.io/custom-skill-manager/',
-    redirectUri: 'http://localhost:3000/',
+    //redirectUri: 'http://localhost:3000/',
+    redirectUri: 'https://alexandreblanchet.github.io/pocDataTable/',
     offlinePresenceId: 'ccf3c10a-aa2c-4845-8e8d-f59fa48c58e5',
 }

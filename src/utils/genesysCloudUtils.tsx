@@ -83,6 +83,10 @@ export async function getDataTableRow(datatableId: string, rowId: string) {
 })
 }
 
+export async function getDataTableRows(datatableId: string) {
+    return await architectApi.getFlowsDatatableRows(datatableId)
+}
+
 export async function putDataTableRow(datatableId: string, rowId: string, content: any) {
     return await architectApi.putFlowsDatatableRow(datatableId, rowId, content)
 }

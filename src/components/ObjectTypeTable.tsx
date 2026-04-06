@@ -75,12 +75,10 @@ export default function ObjectTypeTable({objectType} : { objectType: ObjectType}
     
   const navigate = useNavigate();
   const [order, setOrder] = React.useState<Order>('desc');
-  const [selectedOrder, setSelectedOrder] =React.useState<string>('key')
+  const [selectedOrder, ] = React.useState<string>('key')
   const [selected, setSelected] = React.useState<readonly (string|undefined)[]>([]);
   const [open, setOpen] = React.useState(false);
   const [rows, setRows] = React.useState<any[]>([])
-
-  console.log(rows)
 
   React.useEffect(() => {
     getDataTable(objectType.id).then(dataTable => setRows(dataTable.entities?.map(elem => { return {...elem, version: 1}}) || []))

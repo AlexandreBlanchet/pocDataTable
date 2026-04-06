@@ -7,25 +7,26 @@ import Input from '@mui/joy/Input';
 import Stack from '@mui/joy/Stack';
 import Select from '@mui/joy/Select';
 import Option from '@mui/joy/Option';
-import Typography from '@mui/joy/Typography';
 import Card from '@mui/joy/Card';
 import CardActions from '@mui/joy/CardActions';
 import CardOverflow from '@mui/joy/CardOverflow';
 
 import React from 'react';
-import { getAllFlows, getDataTable, getDataTableInfos, getDataTableRow } from '../utils/genesysCloudUtils';
+import { getAllFlows, getDataTableRow, getDataTableRows, putDataTableRow } from '../utils/genesysCloudUtils';
 import { useParams } from 'react-router';
-import { Models } from 'purecloud-platform-client-v2';
 import { ObjectType } from '../utils/types';
 import { Grid } from '@mui/joy';
 import HeaderPath from './HeaderPath';
 
 
 const hasRight = (property: string, objectType: ObjectType, rightType: "C" | "R" | "U" | "D") => {
-  if(objectType.properties[property].rights != undefined) {
-    return objectType.properties[property].rights.includes(rightType)
+  if(!property || !objectType || !objectType?.properties[property] || objectType?.properties[property].rights) {
+    return
+  }
+  if(objectType?.properties[property].rights != undefined) {
+    return objectType?.properties[property]?.rights?.includes(rightType) || false
   } else {
-    return objectType.rights?.includes(rightType)
+    return objectType?.rights?.includes(rightType)
   }
   
 }
@@ -34,17 +35,50 @@ const hasRight = (property: string, objectType: ObjectType, rightType: "C" | "R"
 export default function ObjectTypeElement({ objectType } : { objectType: ObjectType}) {
     const { id } = useParams();
     const [element, setElement] = React.useState<any>()
-    const [flows, setFlows] = React.useState<Models.Flow[]>([])
+    const [sources, setSources] = React.useState<{[key:string]: {label: string, key: string} []}>({})
 
-
-
+    const save = () => {
+      console.log(element)
+      putDataTableRow(objectType.id, id || "", {body: {...element}})
+    }
+     
     React.useEffect(() => {
-        getDataTableRow(objectType.id, id || '').then(elem => setElement(elem))
-        getDataTableInfos("76dc6855-fc19-4de5-9d14-fbee2bf45843").then(dataTable => {
-          console.log("datatable")
-          console.log(dataTable)
+      getDataTableRows("d0557cdc-f954-4022-b72f-dbf2dfa3ddae").then(sourceFieds => {
+        const fields: string [] = sourceFieds.entities?.filter((source:any) => Object.values(objectType.properties).find(prop => (objectType.id + "." + prop.title) == source.key)).map((source: any) => source.key) || []
+        fields?.map(field => {
+          const fieldId = field.split(".")[1]
+          getDataTableRow("d0557cdc-f954-4022-b72f-dbf2dfa3ddae", field).then((sourceField: any) => {
+            console.log(sourceField)
+            if(sourceField.sourceType == "datatable") {
+              setSources(sources => {return {...sources, [fieldId]:[]}})
+              getDataTableRows(sourceField.source).then((sourceElems: any) => {
+                sourceElems.entities?.map((sourceKey: any) => {
+                  getDataTableRow(sourceField.source, sourceKey.key).then((sourceElem: any) => {
+                    setSources(sources => { return {...sources, [fieldId]: [...sources[fieldId], {label: sourceElem[sourceField.sourceFieldLabel], key: sourceElem[sourceField.sourceFieldValue]}]}})
+                  })
+                })
+              })
+            }
+
+            if(sourceField.sourceType == "genesysEndpoint") {
+              switch(sourceField.source){
+                case "flows": 
+                  getAllFlows().then(flows => setSources(sources => { return {...sources, [fieldId]: flows.map((flow: any) => { return {label: flow[sourceField.sourceFieldLabel], key: flow[sourceField.sourceFieldValue]}})}}))
+                  
+                break;
+              }
+            }
+          
+          })
         })
-        getAllFlows().then(flows => setFlows(flows))
+      })
+    }, [])
+    
+    React.useEffect(() => {
+      if(!id) {
+        return
+      }
+      getDataTableRow(objectType.id, id || '').then(elem => setElement(elem))
     }, [id])
 
      //   console.log(contactChannel)
@@ -83,10 +117,14 @@ export default function ObjectTypeElement({ objectType } : { objectType: ObjectT
                  <Grid>
                   <FormControl sx={{ width: 200 }}>
                   <FormLabel>{objectType.properties[property].title}</FormLabel>{
-                   objectType.properties[property].type == 'string' &&
+                    sources[objectType.properties[property].title] ? <>
+                    <Select size='sm' disabled={!hasRight(property, objectType, "U")} value={element && element[property]} onChange={(_, value) => setElement({...element, [property]: value})}>
+                      {sources[objectType.properties[property].title].map(sourceElem => <Option value={sourceElem.key}>{sourceElem.label}</Option>)}
+                  </Select></> :
+                  <>{objectType.properties[property].type == 'string' &&
                       <Input disabled={!hasRight(property, objectType, "U")} size="sm" 
                         onChange={(e) => setElement({...element, [property]: e.target.value})}
-                        value={element && element[property]} />
+                        value={element && element[property]} />}</>
                   }
                 </FormControl>
                 </Grid>
@@ -101,7 +139,7 @@ export default function ObjectTypeElement({ objectType } : { objectType: ObjectT
               <Button size="sm" variant="outlined" color="neutral">
                 Cancel
               </Button>
-              <Button size="sm" variant="solid">
+              <Button size="sm" variant="solid" onClick={() => save()}>
                 Save
               </Button>
             </CardActions>

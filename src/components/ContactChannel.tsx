@@ -17,7 +17,7 @@ import LocalPhoneIcon from '@mui/icons-material/LocalPhone';
 import EmailIcon from '@mui/icons-material/Email';
 import AudiotrackIcon from '@mui/icons-material/Audiotrack';
 import React from 'react';
-import { getAllFlows, getDataTable, getDataTableInfos, getDataTableRow } from '../utils/genesysCloudUtils';
+import { getAllFlows,  getDataTableInfos, getDataTableRow } from '../utils/genesysCloudUtils';
 import { useParams } from 'react-router';
 import { Models } from 'purecloud-platform-client-v2';
 
