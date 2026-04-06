@@ -20,10 +20,23 @@ import { ObjectType } from '../utils/types';
 import { Grid } from '@mui/joy';
 import HeaderPath from './HeaderPath';
 
+
+const hasRight = (property: string, objectType: ObjectType, rightType: "C" | "R" | "U" | "D") => {
+  if(objectType.properties[property].rights != undefined) {
+    return objectType.properties[property].rights.includes(rightType)
+  } else {
+    return objectType.rights?.includes(rightType)
+  }
+  
+}
+
+
 export default function ObjectTypeElement({ objectType } : { objectType: ObjectType}) {
     const { id } = useParams();
     const [element, setElement] = React.useState<any>()
     const [flows, setFlows] = React.useState<Models.Flow[]>([])
+
+
 
     React.useEffect(() => {
         getDataTableRow(objectType.id, id || '').then(elem => setElement(elem))
@@ -54,7 +67,7 @@ export default function ObjectTypeElement({ objectType } : { objectType: ObjectT
           <Box sx={{ mb: 1 }}>
             <FormControl sx={{ width: 200 }}>
               <FormLabel>{objectType.properties.key.title}</FormLabel>{
-                <Input size="sm" value={element && element.key} />
+                <Input disabled size="sm" value={element && element.key} />
               }
             </FormControl>
           </Box>
@@ -66,14 +79,14 @@ export default function ObjectTypeElement({ objectType } : { objectType: ObjectT
           >
             <Stack spacing={2} sx={{ flexGrow: 1 }}>
               <Grid container spacing={2} sx={{ flexGrow: 1 }}>
-              
-                 {Object.keys(objectType.properties).filter(property => property != "key").map(proprety =>
-                 objectType.properties[proprety].rights?.includes("R") && 
+                 {Object.keys(objectType.properties).filter(property => property != "key" && hasRight(property, objectType, "R")).map(property =>
                  <Grid>
                   <FormControl sx={{ width: 200 }}>
-                  <FormLabel>{objectType.properties[proprety].title}</FormLabel>{
-                   objectType.properties[proprety].type == 'string' &&
-                      <Input disabled={!objectType.properties[proprety].rights?.includes("U")} size="sm" value={element && element[proprety]} />
+                  <FormLabel>{objectType.properties[property].title}</FormLabel>{
+                   objectType.properties[property].type == 'string' &&
+                      <Input disabled={!hasRight(property, objectType, "U")} size="sm" 
+                        onChange={(e) => setElement({...element, [property]: e.target.value})}
+                        value={element && element[property]} />
                   }
                 </FormControl>
                 </Grid>

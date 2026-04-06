@@ -9,7 +9,7 @@ export type ObjectType = {
         [key:string]: {
             title: string 
             type: string
-            rights: string
+            rights?: string
         }
     }
 }

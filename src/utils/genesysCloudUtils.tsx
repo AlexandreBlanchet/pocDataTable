@@ -83,6 +83,14 @@ export async function getDataTableRow(datatableId: string, rowId: string) {
 })
 }
 
+export async function putDataTableRow(datatableId: string, rowId: string, content: any) {
+    return await architectApi.putFlowsDatatableRow(datatableId, rowId, content)
+}
+
+export async function postDataTableRow(datatableId: string, content: any) {
+    return await architectApi.postFlowsDatatableRows(datatableId, content)
+}
+
 export async function getAllFlows() {
     return await getAllPages((e: any) => architectApi.getFlows(e));
 }

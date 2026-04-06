@@ -27,6 +27,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import MoreHorizRoundedIcon from '@mui/icons-material/MoreHorizRounded';
 import { getDataTable } from '../utils/genesysCloudUtils';
 import { useNavigate } from 'react-router';
+import { ObjectType } from '../utils/types';
 
 
 function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
@@ -70,7 +71,7 @@ function RowMenu() {
     </Dropdown>
   );
 }
-export default function UserTable() {
+export default function UserTable({ rights} : {rights: ObjectType}) {
     
   const navigate = useNavigate();
   const [order, setOrder] = React.useState<Order>('desc');

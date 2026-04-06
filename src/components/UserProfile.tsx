@@ -4,61 +4,84 @@ import Button from '@mui/joy/Button';
 import Divider from '@mui/joy/Divider';
 import FormControl from '@mui/joy/FormControl';
 import FormLabel from '@mui/joy/FormLabel';
-import FormHelperText from '@mui/joy/FormHelperText';
 import Input from '@mui/joy/Input';
 import IconButton from '@mui/joy/IconButton';
-import Textarea from '@mui/joy/Textarea';
 import Stack from '@mui/joy/Stack';
-import Select from '@mui/joy/Select';
-import Option from '@mui/joy/Option';
 import Typography from '@mui/joy/Typography';
 import Card from '@mui/joy/Card';
 import CardActions from '@mui/joy/CardActions';
 import CardOverflow from '@mui/joy/CardOverflow';
 
 import EmailRoundedIcon from '@mui/icons-material/EmailRounded';
-import AccessTimeFilledRoundedIcon from '@mui/icons-material/AccessTimeFilledRounded';
-import VideocamRoundedIcon from '@mui/icons-material/VideocamRounded';
-import InsertDriveFileRoundedIcon from '@mui/icons-material/InsertDriveFileRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 
-import DropZone from './DropZone';
-import FileUpload from './FileUpload';
-import CountrySelector from './CountrySelector';
-import EditorToolbar from './EditorToolbar';
 import React from 'react';
-import { getDataTableRow, getUser } from '../utils/genesysCloudUtils';
+import { getDataTableRow, getUser, postDataTableRow, putDataTableRow } from '../utils/genesysCloudUtils';
 import { Models } from 'purecloud-platform-client-v2';
 import { useParams } from 'react-router';
 import { ObjectType } from '../utils/types';
-import { Grid, List, ListDivider, ListItem, ListItemButton, Radio, RadioGroup, Switch } from '@mui/joy';
+import {  List, ListDivider, ListItem,  Switch } from '@mui/joy';
+
+
+const updateRights = (rights: string, rightToUpdate: string) => {
+  rights = rights || ""
+  return rights.includes(rightToUpdate) ? rights.replace(rightToUpdate, "") : (rights + rightToUpdate) 
+
+}
 
 export default function UserProfile({ objectsTypes } : { objectsTypes: ObjectType[]}) {
     const { id } = useParams();
     const [user, setUser] = React.useState<Models.User>()
-    const [localObjectsTypes, setLocalObjectsTypes] = React.useState<ObjectType[]>(objectsTypes)
+    const [localObjectsTypes, setLocalObjectsTypes] = React.useState<ObjectType[]>([])
+    const [userKey, setUserKey] = React.useState<string>()
 
     React.useEffect(() => {
         getUser(id || '').then(user => setUser(user))
-        getDataTableRow("d0129b44-f0aa-48ce-a30f-a798954e3de3", id || "").then( rgts => {
+
+        objectsTypes.map(objectsTypes => {
+          objectsTypes.rights =  ""
+          Object.keys(objectsTypes.properties).map(property => {
+            delete objectsTypes.properties[property].rights
+          })
+        })
+
+
+        getDataTableRow("d0129b44-f0aa-48ce-a30f-a798954e3de3", id || "").then( (rgts: any) => {
+          setUserKey(rgts.key || "")
           const rights = JSON.parse(rgts.rights.toString())
-          setLocalObjectsTypes(localObjectsTypes.map(objType => {
+          setLocalObjectsTypes(objectsTypes.map(objType => {
             let properties = objType.properties
-            Object.keys(properties).map(property => properties[property].rights = rights[objType.id || ""] ? rights[objType.id || ""][properties[property].title] : "")
-            return {...objType, rights: "", properties }
+            Object.keys(properties).map(property => properties[property].rights = rights[objType.id || ""] ? rights[objType.id || ""][properties[property].title] : undefined)
+            return {...objType, rights: rights[objType.id || ""] ? rights[objType.id || ""].all : "" , properties }
           }))
         }).catch(error => {
-          setLocalObjectsTypes(localObjectsTypes.map(objType => {
-            let properties = objType.properties
-            Object.keys(properties).map(property => properties[property].rights = "")
-            return {...objType, rights: "", properties }
-          }))
+          setLocalObjectsTypes(objectsTypes)
         })
     }, [id])
 
+  const save = () => {
+    let createRightsRow: any = {}
+    localObjectsTypes.map((obj: ObjectType) => {
+      createRightsRow[obj.id] = {all:obj.rights}
+      Object.keys(obj.properties).map(key => {
+        if(obj.properties[key].rights) {
+          createRightsRow[obj.id][obj.properties[key].title] = obj.properties[key].rights
+        }
+      })
+    })
+    console.log(JSON.stringify(createRightsRow))
+    if(userKey) {
+      putDataTableRow("d0129b44-f0aa-48ce-a30f-a798954e3de3", userKey, {body: {key: userKey, rights: JSON.stringify(createRightsRow)}})
+    } else {
+      postDataTableRow("d0129b44-f0aa-48ce-a30f-a798954e3de3", {key: id, rights: JSON.stringify(createRightsRow)})
+    }
+
+
+  }
+
 
   return (
-    <Box sx={{ flex: 1, width: '100%' }}>
+    <Box sx={{ flex: 1, width: '100%', overflow: 'auto' }}>
       <Stack
         spacing={4}
         sx={{
@@ -148,13 +171,15 @@ export default function UserProfile({ objectsTypes } : { objectsTypes: ObjectTyp
               <Button size="sm" variant="outlined" color="neutral">
                 Cancel
               </Button>
-              <Button size="sm" variant="solid">
+              <Button size="sm" variant="solid" onClick={() => save()}>
                 Save
               </Button>
             </CardActions>
           </CardOverflow>
         </Card>
-        {objectsTypes.map(objectType => 
+        {localObjectsTypes.sort((a, b) => {
+          return a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1 
+        }).map(objectType => 
           <Card>
             <Box sx={{ mb: 1 }}>
               <Typography level="title-md">{objectType.name}</Typography>
@@ -177,6 +202,49 @@ export default function UserProfile({ objectsTypes } : { objectsTypes: ObjectTyp
                           size="sm"
                           startDecorator={value}
                           checked={objectType.rights.includes(value.charAt(0))}
+                          onChange={(e) => {
+                            let elems: ObjectType[] = []
+                            elems = [...localObjectsTypes.filter(objType =>  objType.name != objectType.name), {
+                              ...objectType,
+                              rights: updateRights(objectType.rights, value.charAt(0))
+                            }]
+
+                            if(value == "Create" || value == "Delete") {
+                              setLocalObjectsTypes([...elems])
+                              return
+                            }
+
+                            console.log("heeere")
+
+                            Object.keys(objectType.properties).map(property => {
+                              const rights = objectType.properties[property].rights
+                              if(rights != undefined) {
+                                console.log(rights)
+                                let selectedObj = elems.find(objType =>  objType.name == objectType.name) || objectType
+                                const newRights = rights.includes(value.charAt(0)) ? (!e.target.checked ? updateRights(rights, value.charAt(0)) : rights) : (e.target.checked ? updateRights(rights, value.charAt(0)) : rights )
+                                console.log(newRights)
+
+                                elems = [...elems.filter(objType =>  objType.name != objectType.name), {
+                                ...selectedObj,
+                                properties: {
+                                  ...selectedObj.properties,
+                                  [property]: {
+                                    ...selectedObj.properties[property],
+                                    rights: newRights
+                                  }
+                                }
+                              }]
+
+                              selectedObj = elems.find(objType =>  objType.name == objectType.name) || objectType
+                              if(newRights.length == selectedObj.rights.replace("C", "").replace("D", "").length && newRights.split("").every(char => selectedObj.rights.includes(char))) {
+                                  delete selectedObj.properties[property].rights;
+                                }
+                              }
+                            })
+
+                            setLocalObjectsTypes([...elems])
+
+                          }}
                         />
                       </ListItem>
                     </React.Fragment>
@@ -187,21 +255,36 @@ export default function UserProfile({ objectsTypes } : { objectsTypes: ObjectTyp
             <Divider />
           <Stack spacing={2} sx={{ flexGrow: 1 }}>
               <Stack  spacing={2} >
-                 {Object.keys(objectType.properties).map(proprety =>
-                  <FormControl sx={{ width: 200 }}>
-                  <FormLabel>{objectType.properties[proprety].title}</FormLabel>{
+                 {Object.keys(objectType.properties).map(property =>
+                  <FormControl sx={{ width: 200 }} key={property}>
+                  <FormLabel>{objectType.properties[property].title}</FormLabel>{
                     <Stack
                     gap={1}
                     direction={"row"}
                     >
-                  {['Create', 'Read', 'Update', 'Delete'].map((value, index) => (
-
+                  {['Read', 'Update'].map((value, index) => {
+                    
+                    const rights = objectType.properties[property].rights != undefined ? objectType.properties[property].rights : objectType.rights.replace("C", "").replace("D", "")
+                    return (
                     <Button
                       size='sm'
-                      color={objectType.properties[proprety].rights?.includes(value.charAt(0)) ? "primary" : "neutral"} variant={objectType.properties[proprety].rights?.includes(value.charAt(0)) ? "outlined" : "soft"}>
+                      onClick={() => {
+                        setLocalObjectsTypes([...localObjectsTypes.filter(objType =>  objType.name != objectType.name), {
+                          ...objectType,
+                          properties: {
+                            ...objectType.properties,
+                            [property]: {
+                              ...objectType.properties[property],
+                              rights: updateRights(rights, value.charAt(0))
+                            }
+                          }
+                        }])
+                      }}
+                      color={rights?.includes(value.charAt(0)) ? "primary" : "neutral"} variant={rights?.includes(value.charAt(0)) ? "outlined" : "soft"}>
                     {value}
                   </Button>
-                  ))}
+                  )}
+                  )}
                 </Stack>
                   }
                 </FormControl>

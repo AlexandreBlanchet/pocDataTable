@@ -30,7 +30,6 @@ function App() {
       })
       .then(async (userDetailsResponse: Models.User) => {
         setAuthenticadUser(userDetailsResponse)
-        console.log(userDetailsResponse.id)
         const rights = await getDataTableRow("d0129b44-f0aa-48ce-a30f-a798954e3de3", userDetailsResponse.id || "").then( rights => {
           return JSON.parse(rights.rights.toString())
         }).catch(error => {
@@ -41,9 +40,12 @@ function App() {
             return getDataTableInfos(objectType.key).then(elem => {
               let properties: any = elem.schema?.properties || {}
               Object.keys(properties).map(property => properties[property].rights = rights[elem.id || ""] ? rights[elem.id || ""][properties[property].title] : "")
-              return {id: elem.id, division: elem.division, name: elem.name, path: objectType.path, description: elem.description, rights: rights[elem.id || ""]?.all || "", properties }})}) || []).then((elems: any) => setObjectsTypes(elems))
+              return {id: elem.id, division: elem.division, name: elem.name, path: objectType.path, description: elem.description, rights: rights[elem.id || ""]?.all || "", properties }})}) || []).
+                then((elems: any) => {
+                  setObjectsTypes(elems)
+                  setInitialized(true)
+                })
         })
-        setInitialized(true)
       })
       .catch((err: any) => {
         console.error(err);
